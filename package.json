@@ -1,0 +1,218 @@
+{
+  "name": "github-actions-manager",
+  "displayName": "GitHub Actions Manager",
+  "description": "View, manage, and trigger GitHub Actions workflows directly from VS Code with real-time status updates and notifications",
+  "version": "0.1.0",
+  "publisher": "choejiwon",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "github",
+    "actions",
+    "workflows",
+    "ci",
+    "cd"
+  ],
+  "activationEvents": [
+    "workspaceContains:.git"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "github-actions",
+          "title": "GitHub Actions",
+          "icon": "$(github-action)"
+        }
+      ]
+    },
+    "views": {
+      "github-actions": [
+        {
+          "id": "githubActionsWorkflows",
+          "name": "Workflows"
+        },
+        {
+          "id": "githubActionsRuns",
+          "name": "Workflow Runs"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "github-actions.refreshWorkflows",
+        "title": "Refresh Workflows",
+        "icon": "$(refresh)",
+        "category": "GitHub Actions"
+      },
+      {
+        "command": "github-actions.refreshRuns",
+        "title": "Refresh Runs",
+        "icon": "$(refresh)",
+        "category": "GitHub Actions"
+      },
+      {
+        "command": "github-actions.triggerWorkflow",
+        "title": "Trigger Workflow",
+        "icon": "$(play)",
+        "category": "GitHub Actions"
+      },
+      {
+        "command": "github-actions.cancelRun",
+        "title": "Cancel Run",
+        "icon": "$(debug-stop)",
+        "category": "GitHub Actions"
+      },
+      {
+        "command": "github-actions.rerunWorkflow",
+        "title": "Rerun Workflow",
+        "icon": "$(debug-restart)",
+        "category": "GitHub Actions"
+      },
+      {
+        "command": "github-actions.rerunFailedJobs",
+        "title": "Rerun Failed Jobs",
+        "icon": "$(debug-restart)",
+        "category": "GitHub Actions"
+      },
+      {
+        "command": "github-actions.viewRunDetail",
+        "title": "View Run Details",
+        "icon": "$(open-preview)",
+        "category": "GitHub Actions"
+      },
+      {
+        "command": "github-actions.openInBrowser",
+        "title": "Open in Browser",
+        "icon": "$(link-external)",
+        "category": "GitHub Actions"
+      },
+      {
+        "command": "github-actions.viewJobLogs",
+        "title": "View Job Logs",
+        "icon": "$(output)",
+        "category": "GitHub Actions"
+      },
+      {
+        "command": "github-actions.setToken",
+        "title": "Set GitHub Token",
+        "category": "GitHub Actions"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "github-actions.refreshWorkflows",
+          "when": "view == githubActionsWorkflows",
+          "group": "navigation"
+        },
+        {
+          "command": "github-actions.refreshRuns",
+          "when": "view == githubActionsRuns",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "github-actions.triggerWorkflow",
+          "when": "view == githubActionsWorkflows && viewItem == workflow-dispatchable",
+          "group": "inline"
+        },
+        {
+          "command": "github-actions.openInBrowser",
+          "when": "view == githubActionsWorkflows && viewItem =~ /^workflow/",
+          "group": "inline"
+        },
+        {
+          "command": "github-actions.cancelRun",
+          "when": "view == githubActionsRuns && viewItem =~ /^run-(in_progress|queued|waiting)/",
+          "group": "inline"
+        },
+        {
+          "command": "github-actions.rerunWorkflow",
+          "when": "view == githubActionsRuns && viewItem =~ /^run-(completed|failure|cancelled)/",
+          "group": "inline"
+        },
+        {
+          "command": "github-actions.rerunFailedJobs",
+          "when": "view == githubActionsRuns && viewItem == run-failure",
+          "group": "context"
+        },
+        {
+          "command": "github-actions.viewRunDetail",
+          "when": "view == githubActionsRuns && viewItem =~ /^run-/",
+          "group": "inline"
+        },
+        {
+          "command": "github-actions.openInBrowser",
+          "when": "view == githubActionsRuns && viewItem =~ /^run-/",
+          "group": "context"
+        },
+        {
+          "command": "github-actions.viewJobLogs",
+          "when": "view == githubActionsRuns && viewItem =~ /^job-/",
+          "group": "inline"
+        },
+        {
+          "command": "github-actions.openInBrowser",
+          "when": "view == githubActionsRuns && viewItem =~ /^job-/",
+          "group": "context"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "GitHub Actions Manager",
+      "properties": {
+        "githubActions.pollingInterval": {
+          "type": "number",
+          "default": 30,
+          "minimum": 10,
+          "description": "Polling interval in seconds for checking workflow run status"
+        },
+        "githubActions.maxRuns": {
+          "type": "number",
+          "default": 20,
+          "minimum": 5,
+          "maximum": 100,
+          "description": "Maximum number of workflow runs to display"
+        },
+        "githubActions.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show notifications when triggered workflow runs complete or fail"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && node esbuild.js",
+    "check-types": "tsc --noEmit",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "npm run check-types && node esbuild.js --production",
+    "lint": "eslint src/",
+    "test": "vscode-test",
+    "build:webview": "cd webview-ui && npm run build"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.15.0",
+    "@types/vscode": "^1.100.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "@octokit/rest": "^22.0.0"
+  }
+}
