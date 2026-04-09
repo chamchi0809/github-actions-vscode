@@ -3,7 +3,10 @@
   "displayName": "GitHub Actions Manager",
   "description": "View, manage, and trigger GitHub Actions workflows directly from VS Code with real-time status updates and notifications",
   "version": "0.1.0",
-  "publisher": "choejiwon",
+  "publisher": "chamchi",
+  "repository": {
+    "url": "https://github.com/chamchi0809/github-actions-vscode"
+  },
   "license": "MIT",
   "engines": {
     "vscode": "^1.100.0"
@@ -191,6 +194,7 @@
     }
   },
   "scripts": {
+    "vscode:publish": "vsce package && vsce publish",
     "vscode:prepublish": "npm run package",
     "compile": "npm run check-types && node esbuild.js",
     "check-types": "tsc --noEmit",
