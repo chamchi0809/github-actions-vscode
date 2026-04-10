@@ -3,6 +3,8 @@ import type { GitHubApiService } from "../github/api.js";
 import type { RepoInfo, Workflow } from "../github/types.js";
 import { WorkflowTreeItem, MessageTreeItem } from "./treeItems.js";
 
+const PINNED_WORKFLOWS_KEY = "githubActions.pinnedWorkflows";
+
 export class WorkflowTreeProvider
   implements vscode.TreeDataProvider<vscode.TreeItem>
 {
@@ -15,7 +17,37 @@ export class WorkflowTreeProvider
   private repo: RepoInfo | null = null;
   private loading = false;
 
-  constructor(private api: GitHubApiService) {}
+  constructor(
+    private api: GitHubApiService,
+    private context: vscode.ExtensionContext
+  ) {}
+
+  private getPinnedIds(): number[] {
+    return this.context.workspaceState.get<number[]>(PINNED_WORKFLOWS_KEY, []);
+  }
+
+  private async setPinnedIds(ids: number[]): Promise<void> {
+    await this.context.workspaceState.update(PINNED_WORKFLOWS_KEY, ids);
+  }
+
+  isPinned(workflowId: number): boolean {
+    return this.getPinnedIds().includes(workflowId);
+  }
+
+  async pinWorkflow(workflowId: number): Promise<void> {
+    const pinned = this.getPinnedIds();
+    if (!pinned.includes(workflowId)) {
+      pinned.push(workflowId);
+      await this.setPinnedIds(pinned);
+      this.refresh();
+    }
+  }
+
+  async unpinWorkflow(workflowId: number): Promise<void> {
+    const pinned = this.getPinnedIds().filter((id) => id !== workflowId);
+    await this.setPinnedIds(pinned);
+    this.refresh();
+  }
 
   setRepo(repo: RepoInfo | null): void {
     this.repo = repo;
@@ -74,7 +106,16 @@ export class WorkflowTreeProvider
         ];
       }
 
-      return this.workflows.map((w) => new WorkflowTreeItem(w));
+      const pinnedIds = this.getPinnedIds();
+      const sorted = [...this.workflows].sort((a, b) => {
+        const aPinned = pinnedIds.includes(a.id);
+        const bPinned = pinnedIds.includes(b.id);
+        if (aPinned && !bPinned) { return -1; }
+        if (!aPinned && bPinned) { return 1; }
+        return 0;
+      });
+
+      return sorted.map((w) => new WorkflowTreeItem(w, pinnedIds.includes(w.id)));
     } catch (err: unknown) {
       this.loading = false;
       const msg = err instanceof Error ? err.message : String(err);

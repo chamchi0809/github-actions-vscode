@@ -21,7 +21,7 @@ export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
   const api = new GitHubApiService(context);
-  const workflowProvider = new WorkflowTreeProvider(api);
+  const workflowProvider = new WorkflowTreeProvider(api, context);
   const runProvider = new RunTreeProvider(api);
   const watcher = new RunWatcher(api, null);
 
@@ -215,6 +215,20 @@ export async function activate(
           return;
         }
         await viewJobLogs(api, repo, item);
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "github-actions.pinWorkflow",
+      async (item: WorkflowTreeItem) => {
+        await workflowProvider.pinWorkflow(item.workflow.id);
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "github-actions.unpinWorkflow",
+      async (item: WorkflowTreeItem) => {
+        await workflowProvider.unpinWorkflow(item.workflow.id);
       }
     ),
 
