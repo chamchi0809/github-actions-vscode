@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import type { GitHubApiService } from "../github/api.js";
 import type { RepoInfo, Workflow } from "../github/types.js";
-import { WorkflowTreeItem, MessageTreeItem } from "./treeItems.js";
+import { WorkflowTreeItem, MessageTreeItem, SeparatorTreeItem } from "./treeItems.js";
 
 const PINNED_WORKFLOWS_KEY = "githubActions.pinnedWorkflows";
 
@@ -107,15 +107,16 @@ export class WorkflowTreeProvider
       }
 
       const pinnedIds = this.getPinnedIds();
-      const sorted = [...this.workflows].sort((a, b) => {
-        const aPinned = pinnedIds.includes(a.id);
-        const bPinned = pinnedIds.includes(b.id);
-        if (aPinned && !bPinned) { return -1; }
-        if (!aPinned && bPinned) { return 1; }
-        return 0;
-      });
+      const pinned = this.workflows.filter((w) => pinnedIds.includes(w.id));
+      const unpinned = this.workflows.filter((w) => !pinnedIds.includes(w.id));
 
-      return sorted.map((w) => new WorkflowTreeItem(w, pinnedIds.includes(w.id)));
+      const items: vscode.TreeItem[] = [
+        ...pinned.map((w) => new WorkflowTreeItem(w, true)),
+        ...(pinned.length > 0 && unpinned.length > 0 ? [new SeparatorTreeItem()] : []),
+        ...unpinned.map((w) => new WorkflowTreeItem(w, false)),
+      ];
+
+      return items;
     } catch (err: unknown) {
       this.loading = false;
       const msg = err instanceof Error ? err.message : String(err);

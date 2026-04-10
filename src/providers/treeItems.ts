@@ -133,51 +133,21 @@ function formatDuration(start: string | null, end: string | null): string {
 export class WorkflowTreeItem extends vscode.TreeItem {
   constructor(
     public readonly workflow: Workflow,
-    public readonly pinned: boolean = false,
-    public readonly dispatchable: boolean = true
+    public readonly pinned: boolean = false
   ) {
     super(workflow.name, vscode.TreeItemCollapsibleState.None);
 
-    const base = dispatchable ? "workflow-dispatchable" : "workflow";
+    const hasDispatch = true; // We'll check at runtime
+    const base = hasDispatch ? "workflow-dispatchable" : "workflow";
     this.contextValue = pinned ? `${base}-pinned` : base;
-
-    // Icon priority: dispatchable green play > pinned > default state icon
-    if (dispatchable) {
-      this.iconPath = new vscode.ThemeIcon(
-        "debug-start",
-        new vscode.ThemeColor("testing.iconPassed")
-      );
-    } else if (pinned) {
-      this.iconPath = new vscode.ThemeIcon(
-        "pinned",
-        new vscode.ThemeColor("charts.yellow")
-      );
-    } else {
-      this.iconPath = getWorkflowIcon(workflow.state);
-    }
-
+    this.iconPath = getWorkflowIcon(workflow.state);
     this.description = workflow.state === "active" ? workflow.path.replace(".github/workflows/", "") : `(${workflow.state})`;
-
-    // Pinned indicator in label suffix
-    if (pinned) {
-      this.description = `$(pinned) ${this.description}`;
-    }
-
     this.tooltip = new vscode.MarkdownString(
       `**${workflow.name}**${pinned ? " 📌" : ""}\n\n` +
         `- Path: \`${workflow.path}\`\n` +
         `- State: ${workflow.state}\n` +
         `- Updated: ${timeAgo(workflow.updated_at)}`
     );
-
-    // Click to trigger for dispatchable workflows
-    if (dispatchable) {
-      this.command = {
-        command: "github-actions.triggerWorkflow",
-        title: "Trigger Workflow",
-        arguments: [this],
-      };
-    }
   }
 }
 
@@ -253,6 +223,13 @@ export class StepTreeItem extends vscode.TreeItem {
     const duration = formatDuration(step.started_at, step.completed_at);
     this.description = duration || (step.status ?? "");
     this.contextValue = "step";
+  }
+}
+
+export class SeparatorTreeItem extends vscode.TreeItem {
+  constructor() {
+    super("────────────", vscode.TreeItemCollapsibleState.None);
+    this.contextValue = "separator";
   }
 }
 
