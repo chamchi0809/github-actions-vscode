@@ -16,6 +16,7 @@ import type {
   WorkflowTreeItem,
   WorkflowRunTreeItem,
   JobTreeItem,
+  StepTreeItem,
 } from "./providers/treeItems.js";
 export async function activate(
   context: vscode.ExtensionContext
@@ -215,6 +216,41 @@ export async function activate(
           return;
         }
         await viewJobLogs(api, repo, item);
+      }
+    ),
+
+    vscode.commands.registerCommand(
+      "github-actions.viewStepLogs",
+      async (item: StepTreeItem) => {
+        const repo = workflowProvider.getRepo();
+        if (!repo) {
+          return;
+        }
+        try {
+          const logs = await api.getJobLogs(repo, item.jobId);
+          const logText = typeof logs === "string" ? logs : JSON.stringify(logs);
+          // Find the step section in the logs
+          const stepName = item.step.name;
+          const doc = await vscode.workspace.openTextDocument({
+            content: logText,
+            language: "log",
+          });
+          const editor = await vscode.window.showTextDocument(doc, { preview: true });
+          // Search for the step name and scroll to it
+          const text = doc.getText();
+          const stepIndex = text.indexOf(stepName);
+          if (stepIndex >= 0) {
+            const pos = doc.positionAt(stepIndex);
+            editor.revealRange(
+              new vscode.Range(pos, pos),
+              vscode.TextEditorRevealType.AtTop
+            );
+            editor.selection = new vscode.Selection(pos, pos);
+          }
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          vscode.window.showErrorMessage(`Failed to get step logs: ${msg}`);
+        }
       }
     ),
 

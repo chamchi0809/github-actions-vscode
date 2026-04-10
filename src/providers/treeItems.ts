@@ -208,7 +208,10 @@ export class JobTreeItem extends vscode.TreeItem {
 }
 
 export class StepTreeItem extends vscode.TreeItem {
-  constructor(public readonly step: JobStep) {
+  constructor(
+    public readonly step: JobStep,
+    public readonly jobId: number
+  ) {
     super(step.name, vscode.TreeItemCollapsibleState.None);
 
     this.iconPath = getRunStatusIcon(
@@ -219,6 +222,12 @@ export class StepTreeItem extends vscode.TreeItem {
     const duration = formatDuration(step.started_at, step.completed_at);
     this.description = duration || (step.status ?? "");
     this.contextValue = "step";
+
+    this.command = {
+      command: "github-actions.viewStepLogs",
+      title: "View Step Logs",
+      arguments: [this],
+    };
   }
 }
 

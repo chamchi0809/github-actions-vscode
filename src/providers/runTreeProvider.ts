@@ -126,7 +126,7 @@ export class RunTreeProvider
     if (!job.steps || job.steps.length === 0) {
       return [new MessageTreeItem("No steps", "info")];
     }
-    return job.steps.map((s) => new StepTreeItem(s));
+    return job.steps.map((s) => new StepTreeItem(s, job.id));
   }
 
   dispose(): void {
