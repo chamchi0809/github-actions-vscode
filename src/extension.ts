@@ -19,21 +19,18 @@ import type {
   StepTreeItem,
 } from "./providers/treeItems.js";
 export async function activate(
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
 ): Promise<void> {
   const api = new GitHubApiService(context);
-  const workflowProvider = new WorkflowTreeProvider(api);
+  const workflowProvider = new WorkflowTreeProvider(api, context);
   const runProvider = new RunTreeProvider(api);
   const watcher = new RunWatcher(api, null);
 
   // Register tree views
-  const workflowTree = vscode.window.createTreeView(
-    "githubActionsWorkflows",
-    {
-      treeDataProvider: workflowProvider,
-      showCollapseAll: true,
-    }
-  );
+  const workflowTree = vscode.window.createTreeView("githubActionsWorkflows", {
+    treeDataProvider: workflowProvider,
+    showCollapseAll: true,
+  });
 
   const runTree = vscode.window.createTreeView("githubActionsRuns", {
     treeDataProvider: runProvider,
@@ -51,11 +48,13 @@ export async function activate(
       vscode.commands.executeCommand(
         "setContext",
         "github-actions.hasRepo",
-        !!repo
+        !!repo,
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      vscode.window.showErrorMessage(`GitHub Actions: Failed to detect repo - ${msg}`);
+      vscode.window.showErrorMessage(
+        `GitHub Actions: Failed to detect repo - ${msg}`,
+      );
     }
   }
 
@@ -63,7 +62,7 @@ export async function activate(
 
   // Re-detect when workspace folders change
   context.subscriptions.push(
-    vscode.workspace.onDidChangeWorkspaceFolders(() => detectAndSetRepo())
+    vscode.workspace.onDidChangeWorkspaceFolders(() => detectAndSetRepo()),
   );
 
   // Listen for auth changes
@@ -105,12 +104,9 @@ export async function activate(
   // ── Commands ────────────────────────────────────────────────────
 
   context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "github-actions.refreshWorkflows",
-      () => {
-        workflowProvider.refresh();
-      }
-    ),
+    vscode.commands.registerCommand("github-actions.refreshWorkflows", () => {
+      workflowProvider.refresh();
+    }),
 
     vscode.commands.registerCommand("github-actions.refreshRuns", () => {
       runProvider.refresh();
@@ -127,13 +123,12 @@ export async function activate(
         const runId = await triggerWorkflow(api, repo, item);
         if (runId) {
           // Watch the triggered run for completion
-          const workflowName =
-            item?.workflow.name || "Workflow";
+          const workflowName = item?.workflow.name || "Workflow";
           watcher.watchRun(runId, workflowName, 0);
           watcher.startPolling();
           runProvider.refresh();
         }
-      }
+      },
     ),
 
     vscode.commands.registerCommand(
@@ -145,7 +140,7 @@ export async function activate(
         }
         await cancelRun(api, repo, item);
         runProvider.refresh();
-      }
+      },
     ),
 
     vscode.commands.registerCommand(
@@ -160,11 +155,11 @@ export async function activate(
         watcher.watchRun(
           item.run.id,
           item.run.name || "Workflow",
-          item.run.run_number
+          item.run.run_number,
         );
         watcher.startPolling();
         runProvider.refresh();
-      }
+      },
     ),
 
     vscode.commands.registerCommand(
@@ -178,11 +173,11 @@ export async function activate(
         watcher.watchRun(
           item.run.id,
           item.run.name || "Workflow",
-          item.run.run_number
+          item.run.run_number,
         );
         watcher.startPolling();
         runProvider.refresh();
-      }
+      },
     ),
 
     vscode.commands.registerCommand(
@@ -192,20 +187,15 @@ export async function activate(
         if (!repo) {
           return;
         }
-        RunDetailPanel.show(
-          api,
-          repo,
-          item.run.id,
-          context.extensionUri
-        );
-      }
+        RunDetailPanel.show(api, repo, item.run.id, context.extensionUri);
+      },
     ),
 
     vscode.commands.registerCommand(
       "github-actions.openInBrowser",
       async (item: WorkflowRunTreeItem | JobTreeItem | WorkflowTreeItem) => {
         await openInBrowser(item as any);
-      }
+      },
     ),
 
     vscode.commands.registerCommand(
@@ -216,7 +206,21 @@ export async function activate(
           return;
         }
         await viewJobLogs(api, repo, item);
-      }
+      },
+    ),
+
+    vscode.commands.registerCommand(
+      "github-actions.pinWorkflow",
+      async (item: WorkflowTreeItem) => {
+        await workflowProvider.pinWorkflow(item.workflow.id);
+      },
+    ),
+
+    vscode.commands.registerCommand(
+      "github-actions.unpinWorkflow",
+      async (item: WorkflowTreeItem) => {
+        await workflowProvider.unpinWorkflow(item.workflow.id);
+      },
     ),
 
     vscode.commands.registerCommand(
@@ -228,14 +232,17 @@ export async function activate(
         }
         try {
           const logs = await api.getJobLogs(repo, item.jobId);
-          const logText = typeof logs === "string" ? logs : JSON.stringify(logs);
+          const logText =
+            typeof logs === "string" ? logs : JSON.stringify(logs);
           // Find the step section in the logs
           const stepName = item.step.name;
           const doc = await vscode.workspace.openTextDocument({
             content: logText,
             language: "log",
           });
-          const editor = await vscode.window.showTextDocument(doc, { preview: true });
+          const editor = await vscode.window.showTextDocument(doc, {
+            preview: true,
+          });
           // Search for the step name and scroll to it
           const text = doc.getText();
           const stepIndex = text.indexOf(stepName);
@@ -243,7 +250,7 @@ export async function activate(
             const pos = doc.positionAt(stepIndex);
             editor.revealRange(
               new vscode.Range(pos, pos),
-              vscode.TextEditorRevealType.AtTop
+              vscode.TextEditorRevealType.AtTop,
             );
             editor.selection = new vscode.Selection(pos, pos);
           }
@@ -251,29 +258,23 @@ export async function activate(
           const msg = err instanceof Error ? err.message : String(err);
           vscode.window.showErrorMessage(`Failed to get step logs: ${msg}`);
         }
-      }
+      },
     ),
 
-    vscode.commands.registerCommand(
-      "github-actions.setToken",
-      async () => {
-        const token = await vscode.window.showInputBox({
-          prompt:
-            "Enter your GitHub Personal Access Token (needs 'repo' scope)",
-          password: true,
-          placeHolder: "ghp_...",
-          ignoreFocusOut: true,
-        });
-        if (token) {
-          await api.setToken(token);
-          vscode.window.showInformationMessage(
-            "GitHub token saved successfully"
-          );
-          workflowProvider.refresh();
-          runProvider.refresh();
-        }
+    vscode.commands.registerCommand("github-actions.setToken", async () => {
+      const token = await vscode.window.showInputBox({
+        prompt: "Enter your GitHub Personal Access Token (needs 'repo' scope)",
+        password: true,
+        placeHolder: "ghp_...",
+        ignoreFocusOut: true,
+      });
+      if (token) {
+        await api.setToken(token);
+        vscode.window.showInformationMessage("GitHub token saved successfully");
+        workflowProvider.refresh();
+        runProvider.refresh();
       }
-    )
+    }),
   );
 
   // ── Disposables ─────────────────────────────────────────────────
@@ -284,7 +285,7 @@ export async function activate(
     workflowProvider,
     watcher,
     api,
-    { dispose: () => stopAutoRefresh() }
+    { dispose: () => stopAutoRefresh() },
   );
 }
 

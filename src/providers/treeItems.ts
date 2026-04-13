@@ -131,15 +131,19 @@ function formatDuration(start: string | null, end: string | null): string {
 // ── Tree Items ──────────────────────────────────────────────────
 
 export class WorkflowTreeItem extends vscode.TreeItem {
-  constructor(public readonly workflow: Workflow) {
+  constructor(
+    public readonly workflow: Workflow,
+    public readonly pinned: boolean = false
+  ) {
     super(workflow.name, vscode.TreeItemCollapsibleState.None);
 
     const hasDispatch = true; // We'll check at runtime
-    this.contextValue = hasDispatch ? "workflow-dispatchable" : "workflow";
+    const base = hasDispatch ? "workflow-dispatchable" : "workflow";
+    this.contextValue = pinned ? `${base}-pinned` : base;
     this.iconPath = getWorkflowIcon(workflow.state);
     this.description = workflow.state === "active" ? workflow.path.replace(".github/workflows/", "") : `(${workflow.state})`;
     this.tooltip = new vscode.MarkdownString(
-      `**${workflow.name}**\n\n` +
+      `**${workflow.name}**${pinned ? " 📌" : ""}\n\n` +
         `- Path: \`${workflow.path}\`\n` +
         `- State: ${workflow.state}\n` +
         `- Updated: ${timeAgo(workflow.updated_at)}`
@@ -228,6 +232,13 @@ export class StepTreeItem extends vscode.TreeItem {
       title: "View Step Logs",
       arguments: [this],
     };
+  }
+}
+
+export class SeparatorTreeItem extends vscode.TreeItem {
+  constructor() {
+    super("────────────", vscode.TreeItemCollapsibleState.None);
+    this.contextValue = "separator";
   }
 }
 
