@@ -63,7 +63,7 @@
       {
         "command": "github-actions.triggerWorkflow",
         "title": "Trigger Workflow",
-        "icon": "$(play)",
+        "icon": "$(debug-start)",
         "category": "GitHub Actions"
       },
       {
@@ -103,6 +103,18 @@
         "category": "GitHub Actions"
       },
       {
+        "command": "github-actions.pinWorkflow",
+        "title": "Pin Workflow",
+        "icon": "$(pin)",
+        "category": "GitHub Actions"
+      },
+      {
+        "command": "github-actions.unpinWorkflow",
+        "title": "Unpin Workflow",
+        "icon": "$(pinned)",
+        "category": "GitHub Actions"
+      },
+      {
         "command": "github-actions.setToken",
         "title": "Set GitHub Token",
         "category": "GitHub Actions"
@@ -123,14 +135,24 @@
       ],
       "view/item/context": [
         {
-          "command": "github-actions.triggerWorkflow",
-          "when": "view == githubActionsWorkflows && viewItem == workflow-dispatchable",
-          "group": "inline"
+          "command": "github-actions.pinWorkflow",
+          "when": "view == githubActionsWorkflows && viewItem =~ /^workflow/ && viewItem =~ /^(?!.*-pinned)/",
+          "group": "inline@1"
+        },
+        {
+          "command": "github-actions.unpinWorkflow",
+          "when": "view == githubActionsWorkflows && viewItem =~ /-pinned$/",
+          "group": "inline@1"
         },
         {
           "command": "github-actions.openInBrowser",
           "when": "view == githubActionsWorkflows && viewItem =~ /^workflow/",
-          "group": "inline"
+          "group": "inline@2"
+        },
+        {
+          "command": "github-actions.triggerWorkflow",
+          "when": "view == githubActionsWorkflows && viewItem =~ /workflow-dispatchable/",
+          "group": "inline@3"
         },
         {
           "command": "github-actions.cancelRun",
