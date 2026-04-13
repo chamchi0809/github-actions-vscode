@@ -2,7 +2,7 @@
   "name": "github-actions-manager",
   "displayName": "GitHub Actions Manager",
   "description": "View, manage, and trigger GitHub Actions workflows directly from VS Code with real-time status updates and notifications",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "chamchi",
   "repository": {
     "url": "https://github.com/chamchi0809/github-actions-vscode"
